@@ -9,8 +9,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     
-    <!-- Thư viện Xuất Excel (SheetJS) -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Thư viện ExcelJS & FileSaver cho Excel xịn đẹp -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <style>
         * {
@@ -240,10 +241,10 @@
     </div>
 
     <div class="bottom-action-bar">
-        <div class="hint-text">💡 Tip: Nhấp chuột phải vào dòng để xóa học sinh. Nút xuất Excel sẽ tải file .xlsx chỉnh sửa được!</div>
+        <div class="hint-text">💡 Tip: Nhấp chuột phải vào dòng để xóa học sinh. File Excel xuất ra được định dạng chuyên nghiệp!</div>
         <div class="btn-group">
             <button class="btn btn-add" onclick="addNewStudent()">➕ Thêm Học Sinh</button>
-            <button class="btn btn-excel" onclick="exportToExcel()">📊 Xuất File Excel (.xlsx)</button>
+            <button class="btn btn-excel" onclick="exportProfessionalExcel()">📊 Xuất File Excel Đẹp (.xlsx)</button>
         </div>
     </div>
 </div>
@@ -264,25 +265,25 @@
     };
 
     const defaultStudents = [
-        { name: "Ngô Văn Khang", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi đầu" },
-        { name: "Nguyễn Văn Trường Phan", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi đầu" },
-        { name: "Vũ Tiến Đạt", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi đầu" },
-        { name: "Ngô Hiểu Lam", startSession: 1, totalSessions: 8, totalFee: 2400000, paidFee: 0, paymentMethod: "TM", note: "Vào từ buổi đầu" },
-        { name: "Nguyễn Thiên Vân Trang", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi đầu" },
-        { name: "Nguyễn Thị Nhã Linh", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi đầu" },
-        { name: "Đỗ Văn Khánh", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi đầu" },
-        { name: "Đỗ Xuân Minh Đức", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi đầu" },
-        { name: "Nguyễn Thị Quỳnh Trang", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi đầu" },
-        { name: "Nguyễn Việt Hoàng", startSession: 2, totalSessions: 59, totalFee: 17700000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi 2" },
-        { name: "Trần Thị Thùy Dương", startSession: 2, totalSessions: 59, totalFee: 17700000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi 2" },
-        { name: "Nguyễn Nhật Hiếu", startSession: 3, totalSessions: 58, totalFee: 17400000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi 3" },
-        { name: "Đỗ Danh Gia Nguyên", startSession: 4, totalSessions: 57, totalFee: 17100000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi 4" },
-        { name: "Nguyễn Chí Dũng", startSession: 4, totalSessions: 57, totalFee: 17100000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi 4" },
-        { name: "Nguyễn Hoàng Tường Vy", startSession: 5, totalSessions: 3, totalFee: 900000, paidFee: 0, paymentMethod: "TM", note: "Vào từ buổi 5" },
-        { name: "Ngô Mai Phương", startSession: 7, totalSessions: 54, totalFee: 16200000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi 7" },
-        { name: "Nguyễn Phi Quang Minh", startSession: 7, totalSessions: 54, totalFee: 16200000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi 7" },
-        { name: "Đỗ Danh Thái", startSession: 8, totalSessions: 53, totalFee: 15900000, paidFee: 0, paymentMethod: "CK", note: "" },
-        { name: "Nguyễn Nhật Minh", startSession: 1, totalSessions: 2, totalFee: 600000, paidFee: 0, paymentMethod: "TM", note: "" }
+        { name: "Ngô Văn Khang", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 18000000, paymentMethod: "TM", note: "Đưa cô Yến vào 31/07/2026" },
+        { name: "Nguyễn Văn Trường Phan", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "TM", note: "" },
+        { name: "Vũ Tiến Đạt", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 15000000, paymentMethod: "TM", note: "Đưa thầy Quân vào 03/08/2026, phụ huynh mang thiếu 3 triệu nên xin phép nộp bù vào buổi sau" },
+        { name: "Ngô Hiểu Lam", startSession: 1, totalSessions: 8, totalFee: 2400000, paidFee: 2400000, paymentMethod: "CK", note: "Chuyển khoản thầy Quân vào 29/07/2026" },
+        { name: "Nguyễn Thiên Vân Trang", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 18000000, paymentMethod: "TM", note: "Đưa cô Yến vào 31/07/2026" },
+        { name: "Nguyễn Thị Nhã Linh", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 18000000, paymentMethod: "CK", note: "Đưa thầy Quân vào 03/08/2026" },
+        { name: "Đỗ Văn Khánh", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "TM", note: "" },
+        { name: "Đỗ Xuân Minh Đức", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 9000000, paymentMethod: "TM", note: "Đưa thầy Quân vào 03/08/2026, phụ huynh xin phép đóng 1 nửa trước" },
+        { name: "Nguyễn Thị Quỳnh Trang", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 18000000, paymentMethod: "TM", note: "Đưa thầy Quân vào 03/08/2026" },
+        { name: "Nguyễn Việt Hoàng", startSession: 2, totalSessions: 59, totalFee: 17700000, paidFee: 10000000, paymentMethod: "CK", note: "Phụ huynh xin phép chuyển trước 10 triệu, vẫn trong tài khoản Tuân" },
+        { name: "Trần Thị Thùy Dương", startSession: 2, totalSessions: 59, totalFee: 17700000, paidFee: 17700000, paymentMethod: "CK", note: "Đưa cô Yến vào 31/07/2026" },
+        { name: "Nguyễn Nhật Hiếu", startSession: 3, totalSessions: 58, totalFee: 17400000, paidFee: 0, paymentMethod: "TM", note: "" },
+        { name: "Đỗ Danh Gia Nguyên", startSession: 4, totalSessions: 57, totalFee: 17100000, paidFee: 17100000, paymentMethod: "CK", note: "Vẫn trong tài khoản Tuân" },
+        { name: "Nguyễn Chí Dũng", startSession: 4, totalSessions: 57, totalFee: 17100000, paidFee: 17100000, paymentMethod: "TM", note: "Đưa thầy Quân vào 03/08/2026" },
+        { name: "Nguyễn Hoàng Tường Vy", startSession: 5, totalSessions: 3, totalFee: 900000, paidFee: 600000, paymentMethod: "CK", note: "Vẫn trong tài khoản Tuân, phụ huynh không trả nốt 1 buổi nên chỉ tính 2 buổi là 600k" },
+        { name: "Ngô Mai Phương", startSession: 7, totalSessions: 54, totalFee: 16200000, paidFee: 16200000, paymentMethod: "TM", note: "Đưa cô Yến vào 31/07/2026" },
+        { name: "Nguyễn Phi Quang Minh", startSession: 7, totalSessions: 54, totalFee: 16200000, paidFee: 16200000, paymentMethod: "CK", note: "Vẫn trong tài khoản Tuân" },
+        { name: "Đỗ Danh Thái", startSession: 8, totalSessions: 53, totalFee: 15900000, paidFee: 0, paymentMethod: "TM", note: "" },
+        { name: "Nguyễn Nhật Minh", startSession: 1, totalSessions: 2, totalFee: 600000, paidFee: 600000, paymentMethod: "CK", note: "Chuyển khoản thầy Quân vào 30/07/2026" }
     ];
 
     let studentsData = [];
@@ -449,44 +450,150 @@
         if (e.button !== 2) hideContextMenu();
     });
 
-    // TẢI VỀ FILE EXCEL (.XLSX)
-    function exportToExcel() {
-        const excelRows = studentsData.map((st, index) => {
-            const totalFee = (Number(st.totalSessions) || 0) * 300000;
-            const paidFee = Number(st.paidFee) || 0;
-            const dueFee = totalFee - paidFee;
-            
-            return {
-                "STT": index + 1,
-                "Họ và tên học viên": st.name || "",
-                "Từ buổi": st.startSession || 1,
-                "Số buổi": st.totalSessions || 0,
-                "Tổng học phí (VNĐ)": totalFee,
-                "Đã nộp (VNĐ)": paidFee,
-                "Hình thức": st.paymentMethod === 'TM' ? 'Tiền mặt' : 'Chuyển khoản',
-                "Còn thiếu (VNĐ)": dueFee <= 0 ? "Đủ" : dueFee,
-                "Ghi chú (Take note)": st.note || ""
+    // HÀM XUẤT EXCEL CHUYÊN NGHIỆP BẰNG EXCELJS
+    async function exportProfessionalExcel() {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Học Phí IELTS AQ06');
+
+        // 1. Tiêu đề lớn
+        worksheet.mergeCells('A1:I1');
+        const titleCell = worksheet.getCell('A1');
+        titleCell.value = 'BẢNG TÍNH HỌC PHÍ HỌC SINH';
+        titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FF1E3A8A' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // 2. Thông tin phụ
+        worksheet.mergeCells('A2:I2');
+        const subCell = worksheet.getCell('A2');
+        subCell.value = 'Lớp: IELTS Level 1 - Cô Yến - AQ06   |   Khóa học: 60 buổi   |   Đơn giá: 300,000 VNĐ/buổi';
+        subCell.font = { name: 'Arial', size: 11, italic: true, color: { argb: 'FF475569' } };
+        subCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        worksheet.addRow([]); // Dòng trống A3
+
+        // 3. Header Bảng (A4:I4)
+        const headers = ['STT', 'Họ và tên học viên', 'Từ buổi', 'Số buổi', 'Tổng học phí (VNĐ)', 'Đã nộp (VNĐ)', 'Hình thức', 'Còn thiếu (VNĐ)', 'Ghi chú (Take note)'];
+        const headerRow = worksheet.addRow(headers);
+        headerRow.height = 26;
+
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF1E3A8A' }
+            };
+            cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FF94A3B8' } },
+                left: { style: 'thin', color: { argb: 'FF94A3B8' } },
+                bottom: { style: 'thin', color: { argb: 'FF94A3B8' } },
+                right: { style: 'thin', color: { argb: 'FF94A3B8' } }
             };
         });
 
-        const worksheet = XLSX.utils.json_to_sheet(excelRows);
+        // 4. Đổ Dữ Liệu
+        let sumTotalFee = 0;
+        let sumPaidFee = 0;
+        let sumDueFee = 0;
 
-        worksheet['!cols'] = [
-            { wch: 6 },   // STT
-            { wch: 28 },  // Họ tên
-            { wch: 10 },  // Từ buổi
-            { wch: 10 },  // Số buổi
-            { wch: 20 },  // Tổng học phí
-            { wch: 18 },  // Đã nộp
-            { wch: 15 },  // Hình thức
-            { wch: 18 },  // Còn thiếu
-            { wch: 45 }   // Ghi chú
+        studentsData.forEach((st, index) => {
+            const totalFee = (Number(st.totalSessions) || 0) * 300000;
+            const paidFee = Number(st.paidFee) || 0;
+            const dueFee = totalFee - paidFee;
+
+            sumTotalFee += totalFee;
+            sumPaidFee += paidFee;
+            if(dueFee > 0) sumDueFee += dueFee;
+
+            const rowData = [
+                index + 1,
+                st.name || '',
+                Number(st.startSession) || 1,
+                Number(st.totalSessions) || 0,
+                totalFee,
+                paidFee,
+                st.paymentMethod === 'TM' ? 'Tiền mặt' : 'Chuyển khoản',
+                dueFee <= 0 ? 'Đủ' : dueFee,
+                st.note || ''
+            ];
+
+            const row = worksheet.addRow(rowData);
+            row.height = 24;
+
+            // Định dạng từng ô trong dòng dữ liệu
+            row.eachCell((cell, colNumber) => {
+                cell.font = { name: 'Arial', size: 10.5 };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                };
+
+                // Tô màu xen kẽ
+                if (index % 2 === 1) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+                }
+
+                // Căn lề & Định dạng số
+                if ([1, 3, 4, 7].includes(colNumber)) {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                } else if ([5, 6].includes(colNumber)) {
+                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                    cell.numFmt = '#,##0" VNĐ"';
+                } else if (colNumber === 8) {
+                    if (dueFee <= 0) {
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                        cell.font = { name: 'Arial', size: 10.5, bold: true, color: { argb: 'FF16A34A' } };
+                    } else {
+                        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                        cell.font = { name: 'Arial', size: 10.5, bold: true, color: { argb: 'FFDC2626' } };
+                        cell.numFmt = '#,##0" VNĐ"';
+                    }
+                } else {
+                    cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+                }
+            });
+        });
+
+        // 5. Dòng Tổng Cộng Bảng
+        const totalRow = worksheet.addRow(['', 'TỔNG CỘNG', '', '', sumTotalFee, sumPaidFee, '', sumDueFee, '']);
+        totalRow.height = 26;
+        totalRow.eachCell((cell, colNumber) => {
+            cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+            cell.border = {
+                top: { style: 'medium', color: { argb: 'FF1E3A8A' } },
+                bottom: { style: 'medium', color: { argb: 'FF1E3A8A' } },
+                left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+            };
+
+            if ([5, 6, 8].includes(colNumber)) {
+                cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                cell.numFmt = '#,##0" VNĐ"';
+            } else {
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            }
+        });
+
+        // 6. Chỉnh độ rộng cột chuẩn không lo tràn
+        worksheet.columns = [
+            { width: 7 },   // STT
+            { width: 28 },  // Họ tên
+            { width: 11 },  // Từ buổi
+            { width: 11 },  // Số buổi
+            { width: 22 },  // Tổng học phí
+            { width: 20 },  // Đã nộp
+            { width: 16 },  // Hình thức
+            { width: 20 },  // Còn thiếu
+            { width: 50 }   // Ghi chú
         ];
 
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "HocPhi_IELTS_AQ06");
-        
-        XLSX.writeFile(workbook, "Bang_Theo_Doi_Hoc_Phi_IELTS_AQ06.xlsx");
+        // Xuất file
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), 'Bang_Theo_Doi_Hoc_Phi_IELTS_AQ06.xlsx');
     }
 
     try {
