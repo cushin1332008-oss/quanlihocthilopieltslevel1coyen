@@ -117,7 +117,6 @@
         .money-total { font-weight: bold; color: #1e3a8a; }
         .money-paid { font-weight: bold; color: #16a34a; }
         
-        /* CSS Hiệu ứng cho ô CÒN THIẾU / ĐỦ */
         .status-due { font-weight: bold; color: #dc2626; }
         .status-done { 
             font-weight: bold; 
@@ -231,7 +230,7 @@
     </div>
 
     <div class="bottom-action-bar">
-        <div class="hint-text">💡 Tip: Nhập số tiền vào ô ĐÃ NỘP là hệ thống tự trừ siêu tốc. Nhấp chuột phải vào dòng để xóa học sinh.</div>
+        <div class="hint-text">💡 Tip: Nhập số tiền vào ô ĐÃ NỘP mượt mà không lo bị chớp màn hình. Nhấp chuột phải vào dòng để xóa học sinh.</div>
         <div class="btn-group">
             <button class="btn btn-add" onclick="addNewStudent()">➕ Thêm Học Sinh</button>
             <button class="btn btn-pdf" onclick="exportToPDF()">📄 Xuất Báo Cáo PDF</button>
@@ -280,6 +279,7 @@
     let docRef;
     let selectedStudentIndex = -1;
     let saveTimeout = null;
+    let isInitialLoaded = false;
 
     const syncText = document.getElementById("syncText");
     const statusDot = document.getElementById("statusDot");
@@ -310,26 +310,24 @@
                 <td>${index + 1}</td>
                 <td>
                     <input type="text" class="cell-input text-left" style="font-weight:600;" value="${st.name || ''}" 
-                           onchange="updateStudentDirect(${index}, 'name', this.value)">
+                           oninput="updateFieldDirect(${index}, 'name', this.value)">
                 </td>
                 <td>
                     <input type="number" class="cell-input" value="${st.startSession || 1}" 
-                           onchange="updateSessions(${index}, 'startSession', this.value)">
+                           oninput="updateFieldDirect(${index}, 'startSession', this.value)">
                 </td>
                 <td>
                     <input type="number" class="cell-input" id="totalSessions-${index}" value="${st.totalSessions || 0}" 
-                           oninput="calcRealtime(${index})"
-                           onchange="updateStudentDirect(${index}, 'totalSessions', this.value)">
+                           oninput="calcRealtime(${index})">
                 </td>
                 <td class="money-total" id="totalFee-${index}">${formatVND(totalFee)}</td>
                 <td>
                     <input type="number" class="cell-input text-right money-paid" id="paidFee-${index}" value="${st.paidFee || 0}" 
                            placeholder="0"
-                           oninput="calcRealtime(${index})"
-                           onchange="updateStudentDirect(${index}, 'paidFee', this.value)">
+                           oninput="calcRealtime(${index})">
                 </td>
                 <td>
-                    <select class="cell-input" onchange="updateStudentDirect(${index}, 'paymentMethod', this.value)">
+                    <select class="cell-input" onchange="updateFieldDirect(${index}, 'paymentMethod', this.value)">
                         <option value="CK" ${st.paymentMethod === 'CK' ? 'selected' : ''}>Chuyển khoản</option>
                         <option value="TM" ${st.paymentMethod === 'TM' ? 'selected' : ''}>Tiền mặt</option>
                     </select>
@@ -340,26 +338,28 @@
                 <td>
                     <input type="text" class="cell-input text-left" value="${st.note || ''}" 
                            placeholder="Nhập ghi chú..."
-                           onchange="updateStudentDirect(${index}, 'note', this.value)">
+                           oninput="updateFieldDirect(${index}, 'note', this.value)">
                 </td>
             `;
             tbody.appendChild(tr);
         });
     }
 
-    // TÍNH TOÁN REALTIME SIÊU TỐC TRÊN BÀN PHÍM (ONINPUT)
+    // TÍNH MƯỢT KHÔNG CẦN RENDER LẠI BẢNG (KHÔNG LO MẤT CON TRỎ)
     function calcRealtime(index) {
         const totalSessionsInput = document.getElementById(`totalSessions-${index}`);
         const paidFeeInput = document.getElementById(`paidFee-${index}`);
         const totalFeeCell = document.getElementById(`totalFee-${index}`);
         const dueCell = document.getElementById(`dueCell-${index}`);
 
+        if (!totalSessionsInput || !paidFeeInput) return;
+
         const totalSessions = Number(totalSessionsInput.value) || 0;
         const paidFee = Number(paidFeeInput.value) || 0;
         const totalFee = totalSessions * 300000;
         const dueFee = totalFee - paidFee;
 
-        // Cập nhật DOM ngay lập tức 0s
+        // Cập nhật DOM trực tiếp 
         totalFeeCell.innerText = formatVND(totalFee);
         if (dueFee <= 0) {
             dueCell.innerHTML = '<span class="status-done">Đủ</span>';
@@ -367,26 +367,25 @@
             dueCell.innerHTML = `<span class="status-due">${formatVND(dueFee)}</span>`;
         }
 
-        // Lưu tạm vào bộ nhớ
+        // Lưu vào mảng bộ nhớ
         studentsData[index].totalSessions = totalSessions;
         studentsData[index].paidFee = paidFee;
         studentsData[index].totalFee = totalFee;
 
-        // Trì hoãn việc lưu lên Server 0.5s để không bị giật lag khi đang gõ liên tục
+        // Đợi 1 giây dừng gõ mới lưu Firebase
+        triggerAutoSave();
+    }
+
+    function updateFieldDirect(index, field, value) {
+        studentsData[index][field] = value;
+        triggerAutoSave();
+    }
+
+    function triggerAutoSave() {
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
             saveData();
-        }, 500);
-    }
-
-    function updateStudentDirect(index, field, value) {
-        studentsData[index][field] = value;
-        saveData();
-    }
-
-    function updateSessions(index, field, value) {
-        studentsData[index][field] = value;
-        saveData();
+        }, 1000);
     }
 
     function addNewStudent() {
@@ -465,21 +464,28 @@
             syncBar.style.color = "#234e52";
             statusDot.style.backgroundColor = "#38a169";
 
-            if (!data) {
-                docRef.set(defaultStudents);
-                studentsData = defaultStudents;
-            } else {
-                studentsData = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+            // Chỉ load renderUI lần đầu tiên để tránh chớp màn hình khi đang gõ
+            if (!isInitialLoaded) {
+                if (!data) {
+                    docRef.set(defaultStudents);
+                    studentsData = defaultStudents;
+                } else {
+                    studentsData = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+                }
+                renderUI();
+                isInitialLoaded = true;
             }
-            renderUI();
         }, (err) => {
             syncText.innerText = "🔴 Lỗi kết nối Firebase (Nhớ bật Test Mode cho Realtime Database nhé)";
             syncBar.style.backgroundColor = "#fff5f5";
             syncBar.style.borderColor = "#feb2b2";
             syncBar.style.color = "#c53030";
             statusDot.style.backgroundColor = "#e53e3e";
-            studentsData = defaultStudents;
-            renderUI();
+            if (!isInitialLoaded) {
+                studentsData = defaultStudents;
+                renderUI();
+                isInitialLoaded = true;
+            }
         });
     } catch(e) {
         syncText.innerText = "⚠️ Chế độ xem tĩnh";
