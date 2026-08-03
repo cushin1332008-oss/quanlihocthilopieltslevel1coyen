@@ -104,6 +104,7 @@
             outline: none;
             padding: 4px;
             border-radius: 4px;
+            transition: all 0.2s;
         }
         .cell-input:focus {
             background-color: #fff;
@@ -115,8 +116,18 @@
         
         .money-total { font-weight: bold; color: #1e3a8a; }
         .money-paid { font-weight: bold; color: #16a34a; }
-        .money-due { font-weight: bold; color: #dc2626; }
-        .money-done { font-weight: bold; color: #16a34a; }
+        
+        /* CSS Hiệu ứng cho ô CÒN THIẾU / ĐỦ */
+        .status-due { font-weight: bold; color: #dc2626; }
+        .status-done { 
+            font-weight: bold; 
+            color: #15803d; 
+            background-color: #dcfce7; 
+            padding: 4px 12px; 
+            border-radius: 20px;
+            display: inline-block;
+            border: 1px solid #86efac;
+        }
 
         select.cell-input {
             cursor: pointer;
@@ -124,7 +135,6 @@
             border: 1px solid #cbd5e1;
         }
 
-        /* Thanh công cụ hạ xuống dưới cùng */
         .bottom-action-bar {
             display: flex;
             justify-content: space-between;
@@ -160,7 +170,6 @@
         .btn-pdf { background-color: #059669; color: white; }
         .btn-pdf:hover { background-color: #047857; }
 
-        /* Context menu chuột phải */
         #contextMenu {
             display: none;
             position: absolute;
@@ -221,9 +230,8 @@
         </table>
     </div>
 
-    <!-- Nút chức năng ẩn phía dưới cùng -->
     <div class="bottom-action-bar">
-        <div class="hint-text">💡 Tip: Nhấp chuột phải vào dòng học sinh để xóa. Dữ liệu chỉnh sửa sẽ tự động lưu Realtime.</div>
+        <div class="hint-text">💡 Tip: Nhập số tiền vào ô ĐÃ NỘP là hệ thống tự trừ siêu tốc. Nhấp chuột phải vào dòng để xóa học sinh.</div>
         <div class="btn-group">
             <button class="btn btn-add" onclick="addNewStudent()">➕ Thêm Học Sinh</button>
             <button class="btn btn-pdf" onclick="exportToPDF()">📄 Xuất Báo Cáo PDF</button>
@@ -231,13 +239,11 @@
     </div>
 </div>
 
-<!-- Menu Chuột Phải -->
 <div id="contextMenu">
     <button onclick="confirmDeleteStudent()">🗑️ Xóa học sinh này</button>
 </div>
 
 <script>
-    // Cấu hình Firebase mới của bạn
     const firebaseConfig = {
         apiKey: "AIzaSyDiclAWr-QX1QqQJyIDq9aun5lAmpvx62s",
         authDomain: "theodoihocphiieltslevel1.firebaseapp.com",
@@ -248,7 +254,6 @@
         databaseURL: "https://theodoihocphiieltslevel1-default-rtdb.asia-southeast1.firebasedatabase.app"
     };
 
-    // Dữ liệu ban đầu trích xuất từ PDF file
     const defaultStudents = [
         { name: "Ngô Văn Khang", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi đầu" },
         { name: "Nguyễn Văn Trường Phan", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "CK", note: "Vào từ buổi đầu" },
@@ -274,6 +279,7 @@
     let studentsData = [];
     let docRef;
     let selectedStudentIndex = -1;
+    let saveTimeout = null;
 
     const syncText = document.getElementById("syncText");
     const statusDot = document.getElementById("statusDot");
@@ -304,41 +310,81 @@
                 <td>${index + 1}</td>
                 <td>
                     <input type="text" class="cell-input text-left" style="font-weight:600;" value="${st.name || ''}" 
-                           onchange="updateStudent(${index}, 'name', this.value)">
+                           onchange="updateStudentDirect(${index}, 'name', this.value)">
                 </td>
                 <td>
                     <input type="number" class="cell-input" value="${st.startSession || 1}" 
-                           onchange="updateStudent(${index}, 'startSession', this.value)">
+                           onchange="updateSessions(${index}, 'startSession', this.value)">
                 </td>
                 <td>
-                    <input type="number" class="cell-input" value="${st.totalSessions || 0}" 
-                           onchange="updateStudent(${index}, 'totalSessions', this.value)">
+                    <input type="number" class="cell-input" id="totalSessions-${index}" value="${st.totalSessions || 0}" 
+                           oninput="calcRealtime(${index})"
+                           onchange="updateStudentDirect(${index}, 'totalSessions', this.value)">
                 </td>
-                <td class="money-total">${formatVND(totalFee)}</td>
+                <td class="money-total" id="totalFee-${index}">${formatVND(totalFee)}</td>
                 <td>
-                    <input type="number" class="cell-input text-right money-paid" value="${st.paidFee || 0}" 
-                           onchange="updateStudent(${index}, 'paidFee', this.value)">
+                    <input type="number" class="cell-input text-right money-paid" id="paidFee-${index}" value="${st.paidFee || 0}" 
+                           placeholder="0"
+                           oninput="calcRealtime(${index})"
+                           onchange="updateStudentDirect(${index}, 'paidFee', this.value)">
                 </td>
                 <td>
-                    <select class="cell-input" onchange="updateStudent(${index}, 'paymentMethod', this.value)">
+                    <select class="cell-input" onchange="updateStudentDirect(${index}, 'paymentMethod', this.value)">
                         <option value="CK" ${st.paymentMethod === 'CK' ? 'selected' : ''}>Chuyển khoản</option>
                         <option value="TM" ${st.paymentMethod === 'TM' ? 'selected' : ''}>Tiền mặt</option>
                     </select>
                 </td>
-                <td class="${dueFee > 0 ? 'money-due' : 'money-done'}">
-                    ${dueFee > 0 ? formatVND(dueFee) : 'Đã xong'}
+                <td id="dueCell-${index}">
+                    ${dueFee <= 0 ? '<span class="status-done">Đủ</span>' : '<span class="status-due">' + formatVND(dueFee) + '</span>'}
                 </td>
                 <td>
                     <input type="text" class="cell-input text-left" value="${st.note || ''}" 
                            placeholder="Nhập ghi chú..."
-                           onchange="updateStudent(${index}, 'note', this.value)">
+                           onchange="updateStudentDirect(${index}, 'note', this.value)">
                 </td>
             `;
             tbody.appendChild(tr);
         });
     }
 
-    function updateStudent(index, field, value) {
+    // TÍNH TOÁN REALTIME SIÊU TỐC TRÊN BÀN PHÍM (ONINPUT)
+    function calcRealtime(index) {
+        const totalSessionsInput = document.getElementById(`totalSessions-${index}`);
+        const paidFeeInput = document.getElementById(`paidFee-${index}`);
+        const totalFeeCell = document.getElementById(`totalFee-${index}`);
+        const dueCell = document.getElementById(`dueCell-${index}`);
+
+        const totalSessions = Number(totalSessionsInput.value) || 0;
+        const paidFee = Number(paidFeeInput.value) || 0;
+        const totalFee = totalSessions * 300000;
+        const dueFee = totalFee - paidFee;
+
+        // Cập nhật DOM ngay lập tức 0s
+        totalFeeCell.innerText = formatVND(totalFee);
+        if (dueFee <= 0) {
+            dueCell.innerHTML = '<span class="status-done">Đủ</span>';
+        } else {
+            dueCell.innerHTML = `<span class="status-due">${formatVND(dueFee)}</span>`;
+        }
+
+        // Lưu tạm vào bộ nhớ
+        studentsData[index].totalSessions = totalSessions;
+        studentsData[index].paidFee = paidFee;
+        studentsData[index].totalFee = totalFee;
+
+        // Trì hoãn việc lưu lên Server 0.5s để không bị giật lag khi đang gõ liên tục
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            saveData();
+        }, 500);
+    }
+
+    function updateStudentDirect(index, field, value) {
+        studentsData[index][field] = value;
+        saveData();
+    }
+
+    function updateSessions(index, field, value) {
         studentsData[index][field] = value;
         saveData();
     }
@@ -363,7 +409,6 @@
         }
     }
 
-    // Context Menu
     const menu = document.getElementById("contextMenu");
     function showContextMenu(x, y, index) {
         selectedStudentIndex = index;
@@ -392,7 +437,6 @@
         if (e.button !== 2) hideContextMenu();
     });
 
-    // Xuất PDF
     function exportToPDF() {
         const element = document.getElementById('pdfContent');
         const opt = {
@@ -405,7 +449,6 @@
         html2pdf().set(opt).from(element).save();
     }
 
-    // Kết nối Realtime với dự án mới
     try {
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
