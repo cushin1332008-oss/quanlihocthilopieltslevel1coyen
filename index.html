@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Học Phí - IELTS Level 1 - AQ06 - Cô Yến</title>
+    <title>Bảng Theo Dõi Học Phí Học Sinh - IELTS Level 1 - AQ06 - Cô Yến</title>
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     
-    <!-- Thư viện ExcelJS & FileSaver cho Excel xịn đẹp -->
+    <!-- Thư viện ExcelJS & FileSaver -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
@@ -213,7 +213,7 @@
     </div>
 
     <div class="header-box">
-        <h1>BẢNG TÍNH HỌC PHÍ HỌC SINH</h1>
+        <h1>BẢNG THEO DÕI HỌC PHÍ HỌC SINH</h1>
         <div class="info-sub">
             <span>📚 Lớp: IELTS Level 1 - Cô Yến - AQ06</span>
             <span>📅 Khóa học: 60 buổi</span>
@@ -241,7 +241,7 @@
     </div>
 
     <div class="bottom-action-bar">
-        <div class="hint-text">💡 Tip: Nhấp chuột phải vào dòng để xóa học sinh. File Excel xuất ra được định dạng chuyên nghiệp!</div>
+        <div class="hint-text">💡 Tip: Nhấp chuột phải vào dòng để xóa học sinh. File Excel xuất ra tự chỉnh dòng cực đẹp!</div>
         <div class="btn-group">
             <button class="btn btn-add" onclick="addNewStudent()">➕ Thêm Học Sinh</button>
             <button class="btn btn-excel" onclick="exportProfessionalExcel()">📊 Xuất File Excel Đẹp (.xlsx)</button>
@@ -450,15 +450,15 @@
         if (e.button !== 2) hideContextMenu();
     });
 
-    // HÀM XUẤT EXCEL CHUYÊN NGHIỆP BẰNG EXCELJS
+    // HÀM XUẤT EXCEL CHUYÊN NGHIỆP - TỰ ĐỘNG CÂN BẰNG & CHỈNH DÒNG
     async function exportProfessionalExcel() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Học Phí IELTS AQ06');
 
-        // 1. Tiêu đề lớn
+        // 1. Tiêu đề lớn - ĐÃ ĐỔI THÀNH "BẢNG THEO DÕI HỌC PHÍ HỌC SINH"
         worksheet.mergeCells('A1:I1');
         const titleCell = worksheet.getCell('A1');
-        titleCell.value = 'BẢNG TÍNH HỌC PHÍ HỌC SINH';
+        titleCell.value = 'BẢNG THEO DÕI HỌC PHÍ HỌC SINH';
         titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FF1E3A8A' } };
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
@@ -474,7 +474,7 @@
         // 3. Header Bảng (A4:I4)
         const headers = ['STT', 'Họ và tên học viên', 'Từ buổi', 'Số buổi', 'Tổng học phí (VNĐ)', 'Đã nộp (VNĐ)', 'Hình thức', 'Còn thiếu (VNĐ)', 'Ghi chú (Take note)'];
         const headerRow = worksheet.addRow(headers);
-        headerRow.height = 26;
+        headerRow.height = 28;
 
         headerRow.eachCell((cell) => {
             cell.fill = {
@@ -519,7 +519,6 @@
             ];
 
             const row = worksheet.addRow(rowData);
-            row.height = 24;
 
             // Định dạng từng ô trong dòng dữ liệu
             row.eachCell((cell, colNumber) => {
@@ -536,18 +535,18 @@
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
                 }
 
-                // Căn lề & Định dạng số
+                // Căn lề & Định dạng số cân bằng
                 if ([1, 3, 4, 7].includes(colNumber)) {
                     cell.alignment = { horizontal: 'center', vertical: 'middle' };
                 } else if ([5, 6].includes(colNumber)) {
                     cell.alignment = { horizontal: 'right', vertical: 'middle' };
                     cell.numFmt = '#,##0" VNĐ"';
                 } else if (colNumber === 8) {
+                    // Cột Còn Thiếu: Căn giữa cho cả "Đủ" và "Số tiền" để siêu cân đối
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
                     if (dueFee <= 0) {
-                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
                         cell.font = { name: 'Arial', size: 10.5, bold: true, color: { argb: 'FF16A34A' } };
                     } else {
-                        cell.alignment = { horizontal: 'right', vertical: 'middle' };
                         cell.font = { name: 'Arial', size: 10.5, bold: true, color: { argb: 'FFDC2626' } };
                         cell.numFmt = '#,##0" VNĐ"';
                     }
@@ -559,7 +558,7 @@
 
         // 5. Dòng Tổng Cộng Bảng
         const totalRow = worksheet.addRow(['', 'TỔNG CỘNG', '', '', sumTotalFee, sumPaidFee, '', sumDueFee, '']);
-        totalRow.height = 26;
+        totalRow.height = 28;
         totalRow.eachCell((cell, colNumber) => {
             cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
@@ -570,30 +569,32 @@
                 right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
             };
 
-            if ([5, 6, 8].includes(colNumber)) {
+            if ([5, 6].includes(colNumber)) {
                 cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                cell.numFmt = '#,##0" VNĐ"';
+            } else if (colNumber === 8) {
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
                 cell.numFmt = '#,##0" VNĐ"';
             } else {
                 cell.alignment = { horizontal: 'center', vertical: 'middle' };
             }
         });
 
-        // 6. Chỉnh độ rộng cột chuẩn không lo tràn
+        // 6. Chỉnh độ rộng cột RỘNG THOẢI MÁI
         worksheet.columns = [
-            { width: 7 },   // STT
-            { width: 28 },  // Họ tên
-            { width: 11 },  // Từ buổi
-            { width: 11 },  // Số buổi
+            { width: 8 },   // STT
+            { width: 30 },  // Họ tên
+            { width: 12 },  // Từ buổi
+            { width: 12 },  // Số buổi
             { width: 22 },  // Tổng học phí
             { width: 20 },  // Đã nộp
             { width: 16 },  // Hình thức
-            { width: 20 },  // Còn thiếu
-            { width: 50 }   // Ghi chú
+            { width: 22 },  // Còn thiếu
+            { width: 55 }   // Ghi chú
         ];
 
-        // Xuất file
         const buffer = await workbook.xlsx.writeBuffer();
-        saveAs(new Blob([buffer]), 'Bang_Theo_Doi_Hoc_Phi_IELTS_AQ06.xlsx');
+        saveAs(new Blob([buffer]), 'Bang_Theo_Doi_Hoc_Phi_Hoc_Sinh.xlsx');
     }
 
     try {
