@@ -9,8 +9,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     
-    <!-- Thư viện Xuất PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Thư viện Xuất Excel (SheetJS) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
         * {
@@ -112,7 +112,6 @@
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
         
-        /* Ô GHI CHÚ TỰ ĐỘNG XUỐNG DÒNG */
         textarea.cell-input {
             resize: vertical;
             min-height: 32px;
@@ -177,8 +176,8 @@
         }
         .btn-add { background-color: #0284c7; color: white; }
         .btn-add:hover { background-color: #0369a1; }
-        .btn-pdf { background-color: #059669; color: white; }
-        .btn-pdf:hover { background-color: #047857; }
+        .btn-excel { background-color: #16a34a; color: white; }
+        .btn-excel:hover { background-color: #15803d; }
 
         #contextMenu {
             display: none;
@@ -206,7 +205,7 @@
 </head>
 <body>
 
-<div class="container" id="pdfContent">
+<div class="container">
     <div class="sync-status-bar" id="syncBar">
         <span class="status-dot" id="statusDot"></span>
         <span id="syncText">Đang kết nối cơ sở dữ liệu Firebase...</span>
@@ -241,10 +240,10 @@
     </div>
 
     <div class="bottom-action-bar">
-        <div class="hint-text">💡 Tip: Ô ghi chú đã hỗ trợ viết dài tự xuống dòng và không bao giờ bị mất chữ khi xuất PDF!</div>
+        <div class="hint-text">💡 Tip: Nhấp chuột phải vào dòng để xóa học sinh. Nút xuất Excel sẽ tải file .xlsx có thể chỉnh sửa cực kỳ tiện lợi!</div>
         <div class="btn-group">
             <button class="btn btn-add" onclick="addNewStudent()">➕ Thêm Học Sinh</button>
-            <button class="btn btn-pdf" onclick="exportToPDF()">📄 Xuất Báo Cáo PDF</button>
+            <button class="btn btn-excel" onclick="exportToExcel()">📊 Xuất File Excel (.xlsx)</button>
         </div>
     </div>
 </div>
@@ -358,7 +357,6 @@
             `;
             tbody.appendChild(tr);
 
-            // Tự động căn chỉnh độ cao textarea sau khi render
             const textarea = tr.querySelector('textarea');
             if (textarea) autoResizeTextarea(textarea);
         });
@@ -451,16 +449,48 @@
         if (e.button !== 2) hideContextMenu();
     });
 
-    function exportToPDF() {
-        const element = document.getElementById('pdfContent');
-        const opt = {
-            margin:       5,
-            filename:     'Bang_Hoc_Phi_IELTS_AQ06.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-        };
-        html2pdf().set(opt).from(element).save();
+    // HÀM XUẤT FILE EXCEL ĐỊNH DẠNG CHUẨN ĐẸP (.XLSX)
+    function exportToExcel() {
+        // Chuẩn bị dữ liệu xuất ra Excel
+        const excelRows = studentsData.map((st, index) => {
+            const totalFee = (Number(st.totalSessions) || 0) * 300000;
+            const paidFee = Number(st.paidFee) || 0;
+            const dueFee = totalFee - paidFee;
+            
+            return {
+                "STT": index + 1,
+                "Họ và tên học viên": st.name || "",
+                "Từ buổi": st.startSession || 1,
+                "Số buổi": st.totalSessions || 0,
+                "Tổng học phí (VNĐ)": totalFee,
+                "Đã nộp (VNĐ)": paidFee,
+                "Hình thức": st.paymentMethod === 'TM' ? 'Tiền mặt' : 'Chuyển khoản',
+                "Còn thiếu (VNĐ)": dueFee <= 0 ? "Đủ" : dueFee,
+                "Ghi chú (Take note)": st.note || ""
+            };
+        });
+
+        // Tạo worksheet từ dữ liệu
+        const worksheet = XLSX.utils.json_to_sheet(excelRows);
+
+        // Chỉnh độ rộng các cột cho vừa vặn và đẹp mắt
+        worksheet['!cols'] = [
+            { wch: 6 },   // STT
+            { wch: 28 },  // Họ tên
+            { wch: 10 },  // Từ buổi
+            { wch: 10 },  // Số buổi
+            { wch: 20 },  // Tổng học phí
+            { wch: 18 },  // Đã nộp
+            { wch: 15 },  // Hình thức
+            { wch: 18 },  // Còn thiếu
+            { wch: 45 }   // Ghi chú
+        ];
+
+        // Tạo workbook và lưu file .xlsx
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "HocPhi_IELTS_AQ06");
+        
+        XLSX.writeFile(workbook, "Bang_Theo_Doi_Hoc_Phi_IELTS_AQ06.xlsx");
     }
 
     try {
