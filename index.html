@@ -24,7 +24,7 @@
             color: #0f172a;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1250px;
             margin: 0 auto;
             background: #ffffff;
             padding: 25px;
@@ -111,6 +111,17 @@
             border-color: #3b82f6;
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
+        
+        /* Ô GHI CHÚ TỰ ĐỘNG XUỐNG DÒNG */
+        textarea.cell-input {
+            resize: vertical;
+            min-height: 32px;
+            line-height: 1.4;
+            overflow: hidden;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
         .text-left { text-align: left !important; }
         .text-right { text-align: right !important; }
         
@@ -215,14 +226,14 @@
             <thead>
                 <tr>
                     <th style="width: 40px;">STT</th>
-                    <th style="width: 170px; text-align: left;">Họ và tên học viên</th>
-                    <th style="width: 70px;">TỪ BUỔI</th>
-                    <th style="width: 70px;">SỐ BUỔI</th>
-                    <th style="width: 110px;">TỔNG HỌC PHÍ</th>
-                    <th style="width: 110px;">ĐÃ NỘP</th>
-                    <th style="width: 110px;">HÌNH THỨC</th>
-                    <th style="width: 110px;">CÒN THIẾU</th>
-                    <th>GHI CHÚ (TAKE NOTE)</th>
+                    <th style="width: 160px; text-align: left;">Họ và tên học viên</th>
+                    <th style="width: 65px;">TỪ BUỔI</th>
+                    <th style="width: 65px;">SỐ BUỔI</th>
+                    <th style="width: 100px;">TỔNG HỌC PHÍ</th>
+                    <th style="width: 100px;">ĐÃ NỘP</th>
+                    <th style="width: 100px;">HÌNH THỨC</th>
+                    <th style="width: 100px;">CÒN THIẾU</th>
+                    <th style="width: 250px;">GHI CHÚ (TAKE NOTE)</th>
                 </tr>
             </thead>
             <tbody id="tuitionTableBody"></tbody>
@@ -230,7 +241,7 @@
     </div>
 
     <div class="bottom-action-bar">
-        <div class="hint-text">💡 Tip: Nhập số tiền vào ô ĐÃ NỘP mượt mà không lo bị chớp màn hình. Nhấp chuột phải vào dòng để xóa học sinh.</div>
+        <div class="hint-text">💡 Tip: Ô ghi chú đã hỗ trợ viết dài tự xuống dòng và không bao giờ bị mất chữ khi xuất PDF!</div>
         <div class="btn-group">
             <button class="btn btn-add" onclick="addNewStudent()">➕ Thêm Học Sinh</button>
             <button class="btn btn-pdf" onclick="exportToPDF()">📄 Xuất Báo Cáo PDF</button>
@@ -289,6 +300,11 @@
         return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
     }
 
+    function autoResizeTextarea(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
     function renderUI() {
         const tbody = document.getElementById("tuitionTableBody");
         tbody.innerHTML = "";
@@ -336,16 +352,18 @@
                     ${dueFee <= 0 ? '<span class="status-done">Đủ</span>' : '<span class="status-due">' + formatVND(dueFee) + '</span>'}
                 </td>
                 <td>
-                    <input type="text" class="cell-input text-left" value="${st.note || ''}" 
-                           placeholder="Nhập ghi chú..."
-                           oninput="updateFieldDirect(${index}, 'note', this.value)">
+                    <textarea class="cell-input text-left" placeholder="Ghi chú..." 
+                              oninput="autoResizeTextarea(this); updateFieldDirect(${index}, 'note', this.value)">${st.note || ''}</textarea>
                 </td>
             `;
             tbody.appendChild(tr);
+
+            // Tự động căn chỉnh độ cao textarea sau khi render
+            const textarea = tr.querySelector('textarea');
+            if (textarea) autoResizeTextarea(textarea);
         });
     }
 
-    // TÍNH MƯỢT KHÔNG CẦN RENDER LẠI BẢNG (KHÔNG LO MẤT CON TRỎ)
     function calcRealtime(index) {
         const totalSessionsInput = document.getElementById(`totalSessions-${index}`);
         const paidFeeInput = document.getElementById(`paidFee-${index}`);
@@ -359,7 +377,6 @@
         const totalFee = totalSessions * 300000;
         const dueFee = totalFee - paidFee;
 
-        // Cập nhật DOM trực tiếp 
         totalFeeCell.innerText = formatVND(totalFee);
         if (dueFee <= 0) {
             dueCell.innerHTML = '<span class="status-done">Đủ</span>';
@@ -367,12 +384,10 @@
             dueCell.innerHTML = `<span class="status-due">${formatVND(dueFee)}</span>`;
         }
 
-        // Lưu vào mảng bộ nhớ
         studentsData[index].totalSessions = totalSessions;
         studentsData[index].paidFee = paidFee;
         studentsData[index].totalFee = totalFee;
 
-        // Đợi 1 giây dừng gõ mới lưu Firebase
         triggerAutoSave();
     }
 
@@ -442,7 +457,7 @@
             margin:       5,
             filename:     'Bang_Hoc_Phi_IELTS_AQ06.pdf',
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
+            html2canvas:  { scale: 2, useCORS: true },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
         };
         html2pdf().set(opt).from(element).save();
@@ -464,7 +479,6 @@
             syncBar.style.color = "#234e52";
             statusDot.style.backgroundColor = "#38a169";
 
-            // Chỉ load renderUI lần đầu tiên để tránh chớp màn hình khi đang gõ
             if (!isInitialLoaded) {
                 if (!data) {
                     docRef.set(defaultStudents);
