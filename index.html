@@ -240,7 +240,7 @@
     </div>
 
     <div class="bottom-action-bar">
-        <div class="hint-text">💡 Tip: Nhấp chuột phải vào dòng để xóa học sinh. Nút xuất Excel sẽ tải file .xlsx có thể chỉnh sửa cực kỳ tiện lợi!</div>
+        <div class="hint-text">💡 Tip: Nhấp chuột phải vào dòng để xóa học sinh. Nút xuất Excel sẽ tải file .xlsx chỉnh sửa được!</div>
         <div class="btn-group">
             <button class="btn btn-add" onclick="addNewStudent()">➕ Thêm Học Sinh</button>
             <button class="btn btn-excel" onclick="exportToExcel()">📊 Xuất File Excel (.xlsx)</button>
@@ -449,9 +449,8 @@
         if (e.button !== 2) hideContextMenu();
     });
 
-    // HÀM XUẤT FILE EXCEL ĐỊNH DẠNG CHUẨN ĐẸP (.XLSX)
+    // TẢI VỀ FILE EXCEL (.XLSX)
     function exportToExcel() {
-        // Chuẩn bị dữ liệu xuất ra Excel
         const excelRows = studentsData.map((st, index) => {
             const totalFee = (Number(st.totalSessions) || 0) * 300000;
             const paidFee = Number(st.paidFee) || 0;
@@ -470,10 +469,8 @@
             };
         });
 
-        // Tạo worksheet từ dữ liệu
         const worksheet = XLSX.utils.json_to_sheet(excelRows);
 
-        // Chỉnh độ rộng các cột cho vừa vặn và đẹp mắt
         worksheet['!cols'] = [
             { wch: 6 },   // STT
             { wch: 28 },  // Họ tên
@@ -486,7 +483,6 @@
             { wch: 45 }   // Ghi chú
         ];
 
-        // Tạo workbook và lưu file .xlsx
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "HocPhi_IELTS_AQ06");
         
