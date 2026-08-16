@@ -145,6 +145,42 @@
             border: 1px solid #cbd5e1;
         }
 
+        /* KHU VỰC GHI CHÚ CHUNG / BÀN GIAO TÀI CHÍNH */
+        .general-note-box {
+            margin-top: 20px;
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .general-note-header {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .general-note-textarea {
+            width: 100%;
+            min-height: 75px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 13.5px;
+            line-height: 1.5;
+            outline: none;
+            resize: vertical;
+            background-color: #ffffff;
+            color: #0f172a;
+            transition: all 0.2s;
+        }
+        .general-note-textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
         .bottom-action-bar {
             display: flex;
             justify-content: space-between;
@@ -240,6 +276,16 @@
         </table>
     </div>
 
+    <!-- KHU VỰC GHI CHÚ CHUNG / BÀN GIAO TÀI CHÍNH -->
+    <div class="general-note-box">
+        <div class="general-note-header">
+            📌 GHI CHÚ CHUNG / NHẬT KÝ BÀN GIAO TÀI CHÍNH
+        </div>
+        <textarea id="generalNoteInput" class="general-note-textarea" 
+                  placeholder="Ví dụ: Đã gửi thầy Quân 100 triệu ngày 05/08, còn giữ lại 15 triệu..."
+                  oninput="autoResizeTextarea(this); updateGeneralNote(this.value)"></textarea>
+    </div>
+
     <div class="bottom-action-bar">
         <div class="hint-text">💡 Tip: Nhấp chuột phải vào dòng để xóa học sinh. File Excel xuất ra tự chỉnh dòng cực đẹp!</div>
         <div class="btn-group">
@@ -287,6 +333,7 @@
     ];
 
     let studentsData = [];
+    let extraNoteData = "";
     let docRef;
     let selectedStudentIndex = -1;
     let saveTimeout = null;
@@ -295,12 +342,14 @@
     const syncText = document.getElementById("syncText");
     const statusDot = document.getElementById("statusDot");
     const syncBar = document.getElementById("syncBar");
+    const generalNoteInput = document.getElementById("generalNoteInput");
 
     function formatVND(amount) {
         return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
     }
 
     function autoResizeTextarea(el) {
+        if (!el) return;
         el.style.height = 'auto';
         el.style.height = el.scrollHeight + 'px';
     }
@@ -361,6 +410,12 @@
             const textarea = tr.querySelector('textarea');
             if (textarea) autoResizeTextarea(textarea);
         });
+
+        // Hiển thị ghi chú chung
+        if (generalNoteInput) {
+            generalNoteInput.value = extraNoteData || "";
+            autoResizeTextarea(generalNoteInput);
+        }
     }
 
     function calcRealtime(index) {
@@ -395,6 +450,11 @@
         triggerAutoSave();
     }
 
+    function updateGeneralNote(val) {
+        extraNoteData = val;
+        triggerAutoSave();
+    }
+
     function triggerAutoSave() {
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
@@ -418,7 +478,10 @@
 
     function saveData() {
         if (docRef) {
-            docRef.set(studentsData);
+            docRef.set({
+                students: studentsData,
+                extraNote: extraNoteData || ""
+            });
         }
     }
 
@@ -450,12 +513,12 @@
         if (e.button !== 2) hideContextMenu();
     });
 
-    // HÀM XUẤT EXCEL CHUYÊN NGHIỆP - TỰ ĐỘNG CÂN BẰNG & CHỈNH DÒNG
+    // HÀM XUẤT EXCEL CHUYÊN NGHIỆP - TỰ ĐỘNG CÂN BẰNG, CHỈNH DÒNG & BAO GỒM GHI CHÚ CHUNG
     async function exportProfessionalExcel() {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Học Phí IELTS AQ06');
 
-        // 1. Tiêu đề lớn - ĐÃ ĐỔI THÀNH "BẢNG THEO DÕI HỌC PHÍ HỌC SINH"
+        // 1. Tiêu đề lớn
         worksheet.mergeCells('A1:I1');
         const titleCell = worksheet.getCell('A1');
         titleCell.value = 'BẢNG THEO DÕI HỌC PHÍ HỌC SINH';
@@ -492,7 +555,7 @@
             };
         });
 
-        // 4. Đổ Dữ Liệu
+        // 4. Đổ Dữ Liệu Học Sinh
         let sumTotalFee = 0;
         let sumPaidFee = 0;
         let sumDueFee = 0;
@@ -520,7 +583,6 @@
 
             const row = worksheet.addRow(rowData);
 
-            // Định dạng từng ô trong dòng dữ liệu
             row.eachCell((cell, colNumber) => {
                 cell.font = { name: 'Arial', size: 10.5 };
                 cell.border = {
@@ -530,19 +592,16 @@
                     right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
                 };
 
-                // Tô màu xen kẽ
                 if (index % 2 === 1) {
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
                 }
 
-                // Căn lề & Định dạng số cân bằng
                 if ([1, 3, 4, 7].includes(colNumber)) {
                     cell.alignment = { horizontal: 'center', vertical: 'middle' };
                 } else if ([5, 6].includes(colNumber)) {
                     cell.alignment = { horizontal: 'right', vertical: 'middle' };
                     cell.numFmt = '#,##0" VNĐ"';
                 } else if (colNumber === 8) {
-                    // Cột Còn Thiếu: Căn giữa cho cả "Đủ" và "Số tiền" để siêu cân đối
                     cell.alignment = { horizontal: 'center', vertical: 'middle' };
                     if (dueFee <= 0) {
                         cell.font = { name: 'Arial', size: 10.5, bold: true, color: { argb: 'FF16A34A' } };
@@ -580,7 +639,37 @@
             }
         });
 
-        // 6. Chỉnh độ rộng cột RỘNG THOẢI MÁI
+        // 6. XUẤT GHI CHÚ CHUNG / BÀN GIAO TÀI CHÍNH VÀO EXCEL (NẾU CÓ)
+        if (extraNoteData && extraNoteData.trim() !== '') {
+            worksheet.addRow([]); // Dòng trống cách biệt
+
+            const noteHeaderRow = worksheet.addRow(['📌 GHI CHÚ CHUNG / NHẬT KÝ BÀN GIAO TÀI CHÍNH']);
+            noteHeaderRow.getCell(1).font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+
+            const currentLastRow = worksheet.lastRow.number + 1;
+            worksheet.mergeCells(`A${currentLastRow}:I${currentLastRow + 2}`);
+            
+            const noteContentCell = worksheet.getCell(`A${currentLastRow}`);
+            noteContentCell.value = extraNoteData;
+            noteContentCell.font = { name: 'Arial', size: 10.5, italic: true };
+            noteContentCell.alignment = { horizontal: 'left', vertical: 'top', wrapText: true };
+            noteContentCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+
+            // Kẻ khung viền đẹp cho khối Ghi chú
+            for (let r = currentLastRow; r <= currentLastRow + 2; r++) {
+                for (let c = 1; c <= 9; c++) {
+                    const cell = worksheet.getCell(r, c);
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                    };
+                }
+            }
+        }
+
+        // 7. Chỉnh độ rộng cột RỘNG THOẢI MÁI
         worksheet.columns = [
             { width: 8 },   // STT
             { width: 30 },  // Họ tên
@@ -615,10 +704,20 @@
 
             if (!isInitialLoaded) {
                 if (!data) {
-                    docRef.set(defaultStudents);
                     studentsData = defaultStudents;
-                } else {
-                    studentsData = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+                    extraNoteData = "";
+                    docRef.set({ students: defaultStudents, extraNote: "" });
+                } else if (Array.isArray(data)) {
+                    // Xử lý tương thích nếu dữ liệu cũ trên Firebase lưu dạng Array
+                    studentsData = data.filter(Boolean);
+                    extraNoteData = "";
+                } else if (typeof data === 'object') {
+                    if (data.students) {
+                        studentsData = Array.isArray(data.students) ? data.students.filter(Boolean) : Object.values(data.students);
+                    } else {
+                        studentsData = defaultStudents;
+                    }
+                    extraNoteData = data.extraNote || "";
                 }
                 renderUI();
                 isInitialLoaded = true;
@@ -631,6 +730,7 @@
             statusDot.style.backgroundColor = "#e53e3e";
             if (!isInitialLoaded) {
                 studentsData = defaultStudents;
+                extraNoteData = "";
                 renderUI();
                 isInitialLoaded = true;
             }
@@ -638,6 +738,7 @@
     } catch(e) {
         syncText.innerText = "⚠️ Chế độ xem tĩnh";
         studentsData = defaultStudents;
+        extraNoteData = "";
         renderUI();
     }
 </script>
