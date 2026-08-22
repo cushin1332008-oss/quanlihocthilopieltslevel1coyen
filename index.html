@@ -216,6 +216,105 @@
         .btn-excel { background-color: #16a34a; color: white; }
         .btn-excel:hover { background-color: #15803d; }
 
+        /* ===== TABS QUẢN LÝ NHIỀU BẢNG (LỚP) ===== */
+        .table-tabs-bar {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .table-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 14px 9px 16px;
+            border-radius: 8px 8px 0 0;
+            border: 1px solid #cbd5e1;
+            border-bottom: none;
+            background-color: #e2e8f0;
+            color: #475569;
+            font-weight: bold;
+            font-size: 13.5px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .table-tab.active {
+            background-color: #1e3a8a;
+            color: #ffffff;
+            border-color: #1e3a8a;
+        }
+        .table-tab .tab-close {
+            background: transparent;
+            border: none;
+            color: inherit;
+            opacity: 0.55;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0 2px;
+            line-height: 1;
+        }
+        .table-tab .tab-close:hover { opacity: 1; }
+        .btn-add-table {
+            padding: 9px 14px;
+            border-radius: 8px;
+            border: 1.5px dashed #94a3b8;
+            background: #ffffff;
+            color: #475569;
+            font-weight: bold;
+            font-size: 13.5px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-add-table:hover { background-color: #f1f5f9; border-color: #1e3a8a; color: #1e3a8a; }
+
+        .btn-edit-info {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 13px;
+            opacity: 0.55;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .btn-edit-info:hover { opacity: 1; background-color: #f1f5f9; }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 16px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        .modal-box h3 { margin: 0 0 6px 0; color: #1e3a8a; font-size: 18px; }
+        .modal-box p { font-size: 13px; color: #64748b; margin: 0 0 16px 0; line-height: 1.5; }
+        .modal-field { margin-bottom: 14px; }
+        .modal-field label { display: block; font-size: 12.5px; font-weight: bold; color: #334155; margin-bottom: 5px; }
+        .modal-field input {
+            width: 100%; padding: 9px 10px; border-radius: 7px; border: 1.5px solid #cbd5e1;
+            font-size: 14px; outline: none;
+        }
+        .modal-field input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+        .modal-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 18px; }
+        .modal-actions-right { display: flex; gap: 8px; margin-left: auto; }
+        .btn-cancel { background-color: #e2e8f0; color: #334155; }
+        .btn-save-modal { background-color: #0284c7; color: #ffffff; }
+        .btn-delete-table { background-color: #fee2e2; color: #dc2626; }
+        .btn-delete-table:hover { background-color: #fecaca; }
+
         #contextMenu {
             display: none;
             position: absolute;
@@ -248,12 +347,15 @@
         <span id="syncText">Đang kết nối cơ sở dữ liệu Firebase...</span>
     </div>
 
+    <div class="table-tabs-bar" id="tableTabsBar"></div>
+
     <div class="header-box">
         <h1>BẢNG THEO DÕI HỌC PHÍ HỌC SINH</h1>
         <div class="info-sub">
-            <span>📚 Lớp: IELTS Level 1 - Cô Yến - AQ06</span>
-            <span>📅 Khóa học: 60 buổi</span>
-            <span>💵 Đơn giá: 300,000 VNĐ/buổi</span>
+            <span>📚 Lớp: <b id="infoClassName">...</b></span>
+            <span>📅 Khóa học: <b id="infoCourseSessions">...</b> buổi</span>
+            <span>💵 Đơn giá: <b id="infoPricePerSession">...</b> VNĐ/buổi</span>
+            <button class="btn-edit-info" onclick="openEditTableModal()" title="Sửa tên lớp / số buổi / đơn giá">✏️ Sửa</button>
         </div>
     </div>
 
@@ -299,6 +401,57 @@
     <button onclick="confirmDeleteStudent()">🗑️ Xóa học sinh này</button>
 </div>
 
+<!-- Modal: Thêm bảng (lớp) mới -->
+<div class="modal-overlay" id="addTableModal">
+    <div class="modal-box">
+        <h3>➕ Thêm bảng học phí mới</h3>
+        <p>Tạo một bảng riêng để theo dõi học phí cho 1 lớp khác. Mỗi bảng có danh sách học sinh, đơn giá và số buổi khóa học riêng.</p>
+        <div class="modal-field">
+            <label>Tên lớp / Tiêu đề bảng</label>
+            <input id="newTableTitle" type="text" placeholder="VD: IELTS Level 1 - Lớp 2 - Cô Yến">
+        </div>
+        <div class="modal-field">
+            <label>Số buổi khóa học</label>
+            <input id="newTableCourseSessions" type="number" min="1" value="45">
+        </div>
+        <div class="modal-field">
+            <label>Đơn giá mỗi buổi (VNĐ)</label>
+            <input id="newTablePrice" type="number" min="0" step="1000" value="150000">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal('addTableModal')">Huỷ</button>
+            <button class="btn btn-save-modal" onclick="confirmAddTable()">Tạo bảng</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Sửa thông tin bảng hiện tại -->
+<div class="modal-overlay" id="editTableModal">
+    <div class="modal-box">
+        <h3>✏️ Sửa thông tin bảng</h3>
+        <p>Đổi tên lớp, số buổi khóa học hoặc đơn giá — học phí của mọi học sinh trong bảng này sẽ tự tính lại theo đơn giá mới.</p>
+        <div class="modal-field">
+            <label>Tên lớp / Tiêu đề bảng</label>
+            <input id="editTableTitle" type="text">
+        </div>
+        <div class="modal-field">
+            <label>Số buổi khóa học</label>
+            <input id="editTableCourseSessions" type="number" min="1">
+        </div>
+        <div class="modal-field">
+            <label>Đơn giá mỗi buổi (VNĐ)</label>
+            <input id="editTablePrice" type="number" min="0" step="1000">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-delete-table" id="deleteTableBtn" onclick="confirmDeleteTable()">🗑️ Xoá bảng này</button>
+            <div class="modal-actions-right">
+                <button class="btn btn-cancel" onclick="closeModal('editTableModal')">Huỷ</button>
+                <button class="btn btn-save-modal" onclick="confirmEditTable()">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyDiclAWr-QX1QqQJyIDq9aun5lAmpvx62s",
@@ -310,7 +463,7 @@
         databaseURL: "https://theodoihocphiieltslevel1-default-rtdb.asia-southeast1.firebasedatabase.app"
     };
 
-    const defaultStudents = [
+    const defaultStudentsTable1 = [
         { name: "Ngô Văn Khang", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 18000000, paymentMethod: "TM", note: "Đưa cô Yến vào 31/07/2026" },
         { name: "Nguyễn Văn Trường Phan", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 0, paymentMethod: "TM", note: "" },
         { name: "Vũ Tiến Đạt", startSession: 1, totalSessions: 60, totalFee: 18000000, paidFee: 15000000, paymentMethod: "TM", note: "Đưa thầy Quân vào 03/08/2026, phụ huynh mang thiếu 3 triệu nên xin phép nộp bù vào buổi sau" },
@@ -332,7 +485,61 @@
         { name: "Nguyễn Nhật Minh", startSession: 1, totalSessions: 2, totalFee: 600000, paidFee: 600000, paymentMethod: "CK", note: "Chuyển khoản thầy Quân vào 30/07/2026" }
     ];
 
-    let studentsData = [];
+    // Dữ liệu nhập từ bảng chấm công Bảng 2 (150.000đ/buổi, khóa 45 buổi).
+    // "Từ buổi" = cột đầu tiên có dấu "x" trên bảng chấm công của bạn ấy.
+    // Chưa có thông tin đã nộp / hình thức nộp trong ảnh chấm công -> mặc định 0 / Chuyển khoản, giáo viên tự điền lại.
+    function buildTable2Students() {
+        const price = 150000, course = 45;
+        const raw = [
+            ["Nguyễn Duy Dũng", 1], ["Nguyễn Thị Minh", 1], ["Phí Thị Hải Anh", 1],
+            ["Phạm Nguyễn Khánh Linh", 1], ["Nguyễn Bảo Linh", 1], ["Trần Thu Hương", 1],
+            ["Nguyễn Thị Kim Xuyến", 1], ["Nguyễn Bá Anh Đức", 1], ["Ngô Văn Mạnh", 1],
+            ["Lê Minh Nhật", 1], ["Lê Nguyễn Thùy Dương", 1], ["Nguyễn Chí Thành", 1],
+            ["Nguyễn Gia Linh", 1], ["Phí Công Lương", 1], ["Hoàng Đức Toàn", 1],
+            ["Nguyễn Minh Quân", 1], ["Khánh Ly", 1], ["Trường Giang", 1],
+            ["Hoàng Hạnh Dung", 1], ["Nguyễn Tri Bảo", 1], ["Trần Danh Quang", 1],
+            ["Tường Vy", 1], ["Nguyễn Thị Thanh Hoàn", 4], ["Nguyễn Khắc Hoài Nam", 5],
+            ["Nguyễn Minh Ngọc", 7], ["Trần Hoàng Giang", 7]
+        ];
+        return raw.map(([name, startSession]) => {
+            const totalSessions = course - startSession + 1;
+            return {
+                name, startSession, totalSessions,
+                totalFee: totalSessions * price,
+                paidFee: 0, paymentMethod: "CK", note: ""
+            };
+        });
+    }
+
+    function buildDefaultTablesData() {
+        return {
+            tables: {
+                table1: {
+                    title: "IELTS Level 1 - Cô Yến - AQ06",
+                    courseSessions: 60,
+                    pricePerSession: 300000,
+                    students: defaultStudentsTable1,
+                    extraNote: ""
+                },
+                table2: {
+                    title: "Lớp thứ 2",
+                    courseSessions: 45,
+                    pricePerSession: 150000,
+                    students: buildTable2Students(),
+                    extraNote: ""
+                }
+            },
+            tableOrder: ["table1", "table2"]
+        };
+    }
+
+    const ACTIVE_TABLE_LS_KEY = "hocphi_active_table_id";
+
+    let tablesData = {};      // { tableId: { title, courseSessions, pricePerSession, students:[...], extraNote } }
+    let tableOrder = [];      // thứ tự hiển thị các tab
+    let activeTableId = null;
+
+    let studentsData = [];    // luôn trỏ tới tablesData[activeTableId].students
     let extraNoteData = "";
     let docRef;
     let selectedStudentIndex = -1;
@@ -348,6 +555,10 @@
         return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
     }
 
+    function getActiveTable() { return tablesData[activeTableId]; }
+    function getActivePrice() { return Number(getActiveTable()?.pricePerSession) || 0; }
+    function getActiveCourseSessions() { return Number(getActiveTable()?.courseSessions) || 0; }
+
     function autoResizeTextarea(el) {
         if (!el) return;
         el.style.height = 'auto';
@@ -361,7 +572,7 @@
         studentsData.forEach((st, index) => {
             const tr = document.createElement("tr");
 
-            const totalFee = (Number(st.totalSessions) || 0) * 300000;
+            const totalFee = (Number(st.totalSessions) || 0) * getActivePrice();
             const paidFee = Number(st.paidFee) || 0;
             const dueFee = totalFee - paidFee;
             st.totalFee = totalFee;
@@ -428,7 +639,7 @@
 
         const totalSessions = Number(totalSessionsInput.value) || 0;
         const paidFee = Number(paidFeeInput.value) || 0;
-        const totalFee = totalSessions * 300000;
+        const totalFee = totalSessions * getActivePrice();
         const dueFee = totalFee - paidFee;
 
         totalFeeCell.innerText = formatVND(totalFee);
@@ -463,11 +674,13 @@
     }
 
     function addNewStudent() {
+        const course = getActiveCourseSessions();
+        const price = getActivePrice();
         studentsData.push({
             name: "Học sinh mới",
             startSession: 1,
-            totalSessions: 60,
-            totalFee: 18000000,
+            totalSessions: course,
+            totalFee: course * price,
             paidFee: 0,
             paymentMethod: "CK",
             note: ""
@@ -479,11 +692,134 @@
     function saveData() {
         if (docRef) {
             docRef.set({
-                students: studentsData,
-                extraNote: extraNoteData || ""
+                tables: tablesData,
+                tableOrder: tableOrder
             });
         }
     }
+
+    /* ================= QUẢN LÝ NHIỀU BẢNG (LỚP) ================= */
+
+    function genTableId() {
+        if (docRef) return docRef.child("tables").push().key;
+        return "tbl_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    }
+
+    function switchToTable(tableId) {
+        if (!tablesData[tableId]) return;
+        activeTableId = tableId;
+        localStorage.setItem(ACTIVE_TABLE_LS_KEY, tableId);
+        studentsData = tablesData[tableId].students;
+        extraNoteData = tablesData[tableId].extraNote || "";
+        renderTabs();
+        renderHeaderInfo();
+        renderUI();
+    }
+
+    function renderTabs() {
+        const bar = document.getElementById("tableTabsBar");
+        bar.innerHTML = "";
+        tableOrder.forEach(id => {
+            const t = tablesData[id];
+            if (!t) return;
+            const tab = document.createElement("div");
+            tab.className = "table-tab" + (id === activeTableId ? " active" : "");
+            tab.innerHTML = `<span>${t.title || "(Chưa đặt tên)"}</span>`;
+            tab.onclick = () => switchToTable(id);
+            bar.appendChild(tab);
+        });
+
+        const addBtn = document.createElement("button");
+        addBtn.className = "btn-add-table";
+        addBtn.innerText = "➕ Thêm bảng";
+        addBtn.onclick = openAddTableModal;
+        bar.appendChild(addBtn);
+    }
+
+    function renderHeaderInfo() {
+        const t = getActiveTable();
+        if (!t) return;
+        document.getElementById("infoClassName").innerText = t.title || "";
+        document.getElementById("infoCourseSessions").innerText = t.courseSessions || 0;
+        document.getElementById("infoPricePerSession").innerText = new Intl.NumberFormat('vi-VN').format(t.pricePerSession || 0);
+    }
+
+    function openAddTableModal() {
+        document.getElementById("newTableTitle").value = "";
+        document.getElementById("newTableCourseSessions").value = 45;
+        document.getElementById("newTablePrice").value = 150000;
+        showModal("addTableModal");
+    }
+
+    function confirmAddTable() {
+        const title = document.getElementById("newTableTitle").value.trim();
+        const courseSessions = Number(document.getElementById("newTableCourseSessions").value) || 0;
+        const price = Number(document.getElementById("newTablePrice").value) || 0;
+
+        if (!title) { alert("Vui lòng nhập tên lớp / tiêu đề bảng."); return; }
+        if (courseSessions <= 0) { alert("Số buổi khóa học phải lớn hơn 0."); return; }
+
+        const id = genTableId();
+        tablesData[id] = {
+            title, courseSessions, pricePerSession: price,
+            students: [], extraNote: ""
+        };
+        tableOrder.push(id);
+        closeModal("addTableModal");
+        switchToTable(id);
+        saveData();
+    }
+
+    function openEditTableModal() {
+        const t = getActiveTable();
+        if (!t) return;
+        document.getElementById("editTableTitle").value = t.title || "";
+        document.getElementById("editTableCourseSessions").value = t.courseSessions || 0;
+        document.getElementById("editTablePrice").value = t.pricePerSession || 0;
+        document.getElementById("deleteTableBtn").style.display = tableOrder.length > 1 ? "inline-flex" : "none";
+        showModal("editTableModal");
+    }
+
+    function confirmEditTable() {
+        const t = getActiveTable();
+        if (!t) return;
+        const title = document.getElementById("editTableTitle").value.trim();
+        const courseSessions = Number(document.getElementById("editTableCourseSessions").value) || 0;
+        const price = Number(document.getElementById("editTablePrice").value) || 0;
+
+        if (!title) { alert("Vui lòng nhập tên lớp / tiêu đề bảng."); return; }
+        if (courseSessions <= 0) { alert("Số buổi khóa học phải lớn hơn 0."); return; }
+
+        t.title = title;
+        t.courseSessions = courseSessions;
+        t.pricePerSession = price;
+
+        closeModal("editTableModal");
+        renderTabs();
+        renderHeaderInfo();
+        renderUI(); // học phí (totalFee) của từng học sinh tự tính lại theo đơn giá mới
+        saveData();
+    }
+
+    function confirmDeleteTable() {
+        if (tableOrder.length <= 1) { alert("Phải giữ lại ít nhất 1 bảng."); return; }
+        const t = getActiveTable();
+        if (!confirm(`⚠️ Xoá toàn bộ bảng "${t.title}" cùng danh sách học sinh trong đó? Hành động này không thể hoàn tác.`)) return;
+
+        const idToDelete = activeTableId;
+        delete tablesData[idToDelete];
+        tableOrder = tableOrder.filter(id => id !== idToDelete);
+
+        closeModal("editTableModal");
+        switchToTable(tableOrder[0]);
+        saveData();
+    }
+
+    function showModal(id) { document.getElementById(id).classList.add("show"); }
+    function closeModal(id) { document.getElementById(id).classList.remove("show"); }
+    document.querySelectorAll(".modal-overlay").forEach(ov => {
+        ov.addEventListener("click", e => { if (e.target === ov) ov.classList.remove("show"); });
+    });
 
     const menu = document.getElementById("contextMenu");
     function showContextMenu(x, y, index) {
@@ -515,8 +851,10 @@
 
     // HÀM XUẤT EXCEL CHUYÊN NGHIỆP - TỰ ĐỘNG CÂN BẰNG, CHỈNH DÒNG & BAO GỒM GHI CHÚ CHUNG
     async function exportProfessionalExcel() {
+        const t = getActiveTable();
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Học Phí IELTS AQ06');
+        const sheetName = (t.title || "Hoc Phi").replace(/[\\\/\?\*\[\]:]/g, "").slice(0, 31) || "Học Phí";
+        const worksheet = workbook.addWorksheet(sheetName);
 
         // 1. Tiêu đề lớn
         worksheet.mergeCells('A1:I1');
@@ -528,7 +866,7 @@
         // 2. Thông tin phụ
         worksheet.mergeCells('A2:I2');
         const subCell = worksheet.getCell('A2');
-        subCell.value = 'Lớp: IELTS Level 1 - Cô Yến - AQ06   |   Khóa học: 60 buổi   |   Đơn giá: 300,000 VNĐ/buổi';
+        subCell.value = `Lớp: ${t.title}   |   Khóa học: ${t.courseSessions} buổi   |   Đơn giá: ${new Intl.NumberFormat('vi-VN').format(t.pricePerSession)} VNĐ/buổi`;
         subCell.font = { name: 'Arial', size: 11, italic: true, color: { argb: 'FF475569' } };
         subCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
@@ -561,7 +899,7 @@
         let sumDueFee = 0;
 
         studentsData.forEach((st, index) => {
-            const totalFee = (Number(st.totalSessions) || 0) * 300000;
+            const totalFee = (Number(st.totalSessions) || 0) * getActivePrice();
             const paidFee = Number(st.paidFee) || 0;
             const dueFee = totalFee - paidFee;
 
@@ -683,7 +1021,8 @@
         ];
 
         const buffer = await workbook.xlsx.writeBuffer();
-        saveAs(new Blob([buffer]), 'Bang_Theo_Doi_Hoc_Phi_Hoc_Sinh.xlsx');
+        const safeFileName = (t.title || "Bang_Hoc_Phi").normalize('NFC').replace(/[\\\/:*?"<>|]/g, "").replace(/\s+/g, "_");
+        saveAs(new Blob([buffer]), `Bang_Theo_Doi_Hoc_Phi_${safeFileName}.xlsx`);
     }
 
     try {
@@ -704,21 +1043,60 @@
 
             if (!isInitialLoaded) {
                 if (!data) {
-                    studentsData = defaultStudents;
-                    extraNoteData = "";
-                    docRef.set({ students: defaultStudents, extraNote: "" });
-                } else if (Array.isArray(data)) {
-                    // Xử lý tương thích nếu dữ liệu cũ trên Firebase lưu dạng Array
-                    studentsData = data.filter(Boolean);
-                    extraNoteData = "";
-                } else if (typeof data === 'object') {
-                    if (data.students) {
-                        studentsData = Array.isArray(data.students) ? data.students.filter(Boolean) : Object.values(data.students);
+                    // Chưa có dữ liệu gì trên Firebase -> khởi tạo Bảng 1 (mặc định) + Bảng 2 (nhập từ ảnh chấm công)
+                    const seed = buildDefaultTablesData();
+                    tablesData = seed.tables;
+                    tableOrder = seed.tableOrder;
+                    docRef.set({ tables: tablesData, tableOrder: tableOrder });
+                } else if (data.tables) {
+                    // Đã ở định dạng nhiều bảng (multi-table)
+                    tablesData = data.tables;
+                    tableOrder = Array.isArray(data.tableOrder) ? data.tableOrder.filter(id => tablesData[id]) : Object.keys(data.tables);
+                    Object.keys(tablesData).forEach(id => { if (!tableOrder.includes(id)) tableOrder.push(id); });
+                } else {
+                    // ĐỊNH DẠNG CŨ (1 bảng duy nhất) -> tự động chuyển sang nhiều bảng, GIỮ NGUYÊN toàn bộ dữ liệu cũ
+                    // và nhập luôn Bảng 2 (từ ảnh chấm công) trong lần nâng cấp này.
+                    let oldStudents, oldNote;
+                    if (Array.isArray(data)) {
+                        oldStudents = data.filter(Boolean);
+                        oldNote = "";
+                    } else if (typeof data === 'object') {
+                        oldStudents = data.students
+                            ? (Array.isArray(data.students) ? data.students.filter(Boolean) : Object.values(data.students))
+                            : defaultStudentsTable1;
+                        oldNote = data.extraNote || "";
                     } else {
-                        studentsData = defaultStudents;
+                        oldStudents = defaultStudentsTable1;
+                        oldNote = "";
                     }
-                    extraNoteData = data.extraNote || "";
+
+                    tablesData = {
+                        table1: {
+                            title: "IELTS Level 1 - Cô Yến - AQ06",
+                            courseSessions: 60,
+                            pricePerSession: 300000,
+                            students: oldStudents,
+                            extraNote: oldNote
+                        },
+                        table2: {
+                            title: "Lớp thứ 2",
+                            courseSessions: 45,
+                            pricePerSession: 150000,
+                            students: buildTable2Students(),
+                            extraNote: ""
+                        }
+                    };
+                    tableOrder = ["table1", "table2"];
+                    docRef.set({ tables: tablesData, tableOrder: tableOrder }); // hoàn tất nâng cấp, ghi lại định dạng mới
                 }
+
+                const savedActive = localStorage.getItem(ACTIVE_TABLE_LS_KEY);
+                activeTableId = (savedActive && tablesData[savedActive]) ? savedActive : tableOrder[0];
+                studentsData = tablesData[activeTableId].students;
+                extraNoteData = tablesData[activeTableId].extraNote || "";
+
+                renderTabs();
+                renderHeaderInfo();
                 renderUI();
                 isInitialLoaded = true;
             }
@@ -729,16 +1107,28 @@
             syncBar.style.color = "#c53030";
             statusDot.style.backgroundColor = "#e53e3e";
             if (!isInitialLoaded) {
-                studentsData = defaultStudents;
-                extraNoteData = "";
+                const seed = buildDefaultTablesData();
+                tablesData = seed.tables;
+                tableOrder = seed.tableOrder;
+                activeTableId = tableOrder[0];
+                studentsData = tablesData[activeTableId].students;
+                extraNoteData = tablesData[activeTableId].extraNote || "";
+                renderTabs();
+                renderHeaderInfo();
                 renderUI();
                 isInitialLoaded = true;
             }
         });
     } catch(e) {
         syncText.innerText = "⚠️ Chế độ xem tĩnh";
-        studentsData = defaultStudents;
-        extraNoteData = "";
+        const seed = buildDefaultTablesData();
+        tablesData = seed.tables;
+        tableOrder = seed.tableOrder;
+        activeTableId = tableOrder[0];
+        studentsData = tablesData[activeTableId].students;
+        extraNoteData = tablesData[activeTableId].extraNote || "";
+        renderTabs();
+        renderHeaderInfo();
         renderUI();
     }
 </script>
